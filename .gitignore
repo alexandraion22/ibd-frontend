@@ -1,0 +1,6 @@
+# Dependency directories
+node_modules/
+/public/build/
+.DS_Store
+.svelte-kit
+package-lock.json
