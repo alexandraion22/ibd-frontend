@@ -5,12 +5,10 @@
 	import { onMount } from 'svelte';
 
     onMount(() => {
-        //if (typeof window !== 'undefined') {
-            const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
-            if (!isAuthenticated && window.location.pathname !== '/auth') {
-                window.location.href = '/auth';
-            }
-        //}
+        const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
+        if (!isAuthenticated && window.location.pathname !== '/auth/login') {
+            window.location.href = '/auth/login';
+        }
     });
 </script>
 

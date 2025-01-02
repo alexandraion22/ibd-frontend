@@ -1,5 +1,5 @@
 <script>
-    import { isAuthenticated } from '../../stores/auth';
+    import { isAuthenticated } from '../../../stores/auth';
 
     let username = '';
     let password = '';
@@ -34,4 +34,8 @@
     {#if error}
         <p class="text-red-500 mt-2">{error}</p>
     {/if}
+
+    <div class="mt-4">
+        <a href="/auth/signup" class="text-blue-500">Need to Sign Up?</a>
+    </div>
 </div>

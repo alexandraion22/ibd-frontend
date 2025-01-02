@@ -15,7 +15,7 @@
 
     function logout() {
         sessionStorage.removeItem('isAuthenticated');
-        window.location.href = "/auth";
+        window.location.href = "/auth/login";
     }
 
     let map;
@@ -66,7 +66,6 @@
 </style>
 
 {#if authenticated}
-    <!-- Logout Button in Top Right Corner -->
     <button class="logout-btn" on:click={logout}>Logout</button>
 
     <div id="homescreen" class="flex flex-col items-center space-y-4 w-full h-screen px-20 pt-5">
