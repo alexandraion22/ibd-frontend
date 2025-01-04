@@ -10,13 +10,5 @@ export default {
 		extend: {}
 	},
 
-	plugins: [
-		typography,
-		forms,
-		containerQueries,
-		function ({ addVariant }) {
-			addVariant('hs-dropdown-open', ['&.hs-dropdown-open']);
-		},
-
-	]
+	plugins: [typography, forms, containerQueries]
 };
