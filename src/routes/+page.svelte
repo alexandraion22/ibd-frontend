@@ -56,8 +56,8 @@
         if (currentPage > 1) currentPage--;
     }
 
-    function editCollection(id) {
-        console.log(`Edit collection with ID: ${id}`);
+    function editCollection(id, name) {
+        window.location.href = `/collections/edit_collection?id=${id}&name=${encodeURIComponent(`${name}`)}`;
     }
 
     async function deleteCollection(id) {
@@ -261,7 +261,7 @@
                 <div class="collection-item">
                     <span>{collection.name}</span>
                     <div class="collection-buttons">
-                        <button class="edit-btn" on:click={() => editCollection(collection.id)}>Edit</button>
+                        <button class="edit-btn" on:click={() => editCollection(collection.id, collection.name)}>Edit</button>
                         <button class="delete-btn" on:click={() => deleteCollection(collection.id)}>Delete</button>
                         <button class="see-btn" on:click={() => seeCollection(collection.id)}>View</button>
                     </div>
