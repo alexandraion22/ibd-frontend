@@ -1,24 +1,52 @@
 <script>
     import logo from '$lib/assets/city-spotter-bg.png';
     import { isAuthenticated } from '../stores/auth';
+    import { onMount } from 'svelte';
 
     let authenticated = false;
     isAuthenticated.subscribe(value => {
         authenticated = value;
     });
 
-    let collections = [
-        { id: 1, name: "Collection 1" },
-        { id: 2, name: "Collection 2" },
-        { id: 3, name: "Collection 3" },
-        { id: 4, name: "Collection 4" },
-        { id: 5, name: "Collection 5" },
-        { id: 6, name: "Collection 6" }
-    ];
-
+    let collections = [];
     let currentPage = 1;
     const itemsPerPage = 5;
     $: totalPages = Math.max(1, Math.ceil(collections.length / itemsPerPage));
+    let error = '';
+
+    async function fetchCollections() {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/collections/get_collections`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                error = data.message || 'Failed to load collections.';
+                return;
+            }
+
+            const data = await response.json();
+            if (data.collections && Array.isArray(data.collections)) {
+                collections = data.collections.map(item => ({
+                    id: item.collection_id,
+                    name: item.name
+                }));
+            } else {
+                error = 'Invalid data format from server.';
+            }
+        } catch (err) {
+            error = 'An error occurred while fetching collections.';
+            console.error(err);
+        }
+    }
+
+    onMount(() => {
+        fetchCollections();
+    });
 
     function nextPage() {
         if (currentPage < totalPages) currentPage++;
@@ -28,16 +56,33 @@
         if (currentPage > 1) currentPage--;
     }
 
-    function editCollection(id) {
-        console.log(`Edit collection with ID: ${id}`);
+    function editCollection(id, name) {
+        window.location.href = `/collections/edit_collection?id=${id}&name=${encodeURIComponent(`${name}`)}`;
     }
 
-    function deleteCollection(id) {
-        console.log(`Delete collection with ID: ${id}`);
-        collections = collections.filter(collection => collection.id !== id);
+    async function deleteCollection(id) {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/collections/delete_collection/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`
+                }
+            });
 
-        if (currentPage > Math.ceil(collections.length / itemsPerPage)) {
-            currentPage = Math.max(1, Math.ceil(collections.length / itemsPerPage));
+            if (!response.ok) {
+                const data = await response.json();
+                console.error('Failed to delete collection:', data.message || 'Unknown error');
+                return;
+            }
+
+            collections = collections.filter(collection => collection.id !== id);
+
+            if (currentPage > Math.ceil(collections.length / itemsPerPage)) {
+                currentPage = Math.max(1, Math.ceil(collections.length / itemsPerPage));
+            }
+
+        } catch (err) {
+            console.error('Error while deleting collection:', err);
         }
     }
 
@@ -53,6 +98,10 @@
 
     function gotoDashboard() {
         window.location.href = "/dashboard";
+    }
+
+    function newCollection() {
+        window.location.href = "/collections/new_collection";
     }
 </script>
 
@@ -197,24 +246,28 @@
         <div class="content">
             <div class="collections-header">
                 <h2>My Collections</h2>
-                <button id="btn-dashboard" on:click={() => {gotoDashboard()}} class="btn-primary">📊 View Statistics</button>
-                <button id="btn-dashboard" class="btn-primary">+ New Collection</button>
+                <button id="btn-dashboard" on:click={gotoDashboard} class="btn-primary">📊 View Statistics</button>
+                <button id="btn-dashboard" on:click={newCollection} class="btn-primary">+ New Collection</button>
             </div>
+
+            {#if collections.length === 0}
+                <p class="text-center text-gray-500">No collections available.</p>
+            {/if}
+
+            {#if collections.length > 0 && error}
+                <p class="text-red-500">{error}</p>
+            {/if}
 
             {#each collections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) as collection (collection.id)}
                 <div class="collection-item">
                     <span>{collection.name}</span>
                     <div class="collection-buttons">
-                        <button class="edit-btn" on:click={() => editCollection(collection.id)}>Edit</button>
+                        <button class="edit-btn" on:click={() => editCollection(collection.id, collection.name)}>Edit</button>
                         <button class="delete-btn" on:click={() => deleteCollection(collection.id)}>Delete</button>
                         <button class="see-btn" on:click={() => seeCollection(collection.id)}>View</button>
                     </div>
                 </div>
             {/each}
-            
-            {#if collections.length === 0}
-                <p class="text-center text-gray-500">No collections available.</p>
-            {/if}
         </div>
 
         <div class="pagination">
