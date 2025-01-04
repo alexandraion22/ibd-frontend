@@ -50,4 +50,7 @@
     {#if userEmail}
         <p class="mt-4 text-green-500">Hello, {userEmail}!</p>
     {/if}
+    <div class="mt-4">
+        <a href="/auth/signup" class="text-blue-500">Need to Sign Up?</a>
+    </div>
 </div>
