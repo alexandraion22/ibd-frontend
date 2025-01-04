@@ -47,6 +47,7 @@
 
     function logout() {
         sessionStorage.removeItem('isAuthenticated');
+        sessionStorage.removeItem('username')
         window.location.href = "/auth/login";
     }
 

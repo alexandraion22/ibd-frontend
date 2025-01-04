@@ -2,10 +2,8 @@
     import * as d3 from "d3";
 	  import { onMount } from "svelte";
   
-    // Sample data
     export let places = [];
-  
-    // Group and count the places by type
+
     let groupedData = Object.entries(
       places.reduce((acc, place) => {
         acc[place.type] = (acc[place.type] || 0) + 1;
@@ -13,19 +11,16 @@
       }, {})
     ).map(([type, count]) => ({ type, count }));
   
-    // Dimensions
     const width = 400;
     const height = 400;
     const radius = Math.min(width, height) / 2;
   
-    // Pie and arc generators
     const pie = d3.pie().value((d) => d.count);
     const arc = d3.arc().innerRadius(0).outerRadius(radius - 10);
-  
-    // Color scale
+
     const color = d3.scaleOrdinal(d3.schemeCategory10);
   
-    // Calculate pie data
+
     let pieData = pie(groupedData);
   </script>
   

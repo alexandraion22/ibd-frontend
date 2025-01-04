@@ -9,6 +9,7 @@
         if (username === 'admin' && password === 'admin') {
             sessionStorage.setItem('isAuthenticated', 'true');
             isAuthenticated.set(true);
+            sessionStorage.setItem('username', username);
             window.location.href = "/";
         } else {
             error = 'Invalid credentials. Please try again.';

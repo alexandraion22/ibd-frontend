@@ -2,16 +2,15 @@
   import * as d3 from "d3";
   import { onMount } from 'svelte';
 
-  export let userCollections = [];
+    let { dropdownChartData } = $props();
 
     onMount(() => {
-          // set the dimensions and margins of the graph
+      $inspect(dropdownChartData)
       const margin = {top: 30, right: 30, bottom: 70, left: 60},
           width = 460 - margin.left - margin.right,
           height = 400 - margin.top - margin.bottom;
       
-      // append the svg object to the body of the page
-      const svg = d3.select("#user-collection-number")
+      const svg = d3.select("#categories-dropdown-chart")
         .append("svg")
           .attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom)
@@ -19,10 +18,9 @@
           .attr("transform", `translate(${margin.left}, ${margin.top})`);
     
       
-      // X axis => user's name
       const x = d3.scaleBand()
         .range([ 0, width ])
-        .domain(userCollections.map(d => d.user))
+        .domain(dropdownChartData.map(d => d.x))
         .padding(0.2);
 
       svg.append("g")
@@ -32,7 +30,7 @@
           .attr("transform", "translate(-10,0)rotate(-45)")
           .style("text-anchor", "end");
       
-      const maxCollections = Math.max(...userCollections.map(item => item.collections))
+      const maxCollections = Math.max(...dropdownChartData.map(d => d.y))
     
       const y = d3.scaleLinear()
         .domain([0, maxCollections])
@@ -41,28 +39,25 @@
         .call(
           d3.axisLeft(y)
             .ticks(maxCollections) 
-            .tickFormat(d => (Number.isInteger(d) ? d : ""))
-        );
+            .tickFormat(d => (Number.isInteger(d) ? d : "")) 
+      );
 
       svg.selectAll("mybar")
-        .data(userCollections)
+        .data(dropdownChartData)
         .join("rect")
-          .attr("x", d => x(d.user))
+          .attr("x", d => x(d.x))
           .attr("width", x.bandwidth())
           .attr("fill", "#69b3a2")
-          .attr("height", d => height - y(0)) // always equal to 0
+          .attr("height", d => height - y(0))
           .attr("y", d => y(0))
 
       svg.selectAll("rect")
           .transition()
           .duration(800)
-          .attr("y", d => y(d.collections))
-          .attr("height", d => height - y(d.collections))
+          .attr("y", d => y(d.y))
+          .attr("height", d => height - y(d.y))
           .delay((d,i) => {console.log(i); return i*100})
 
     });
 
-    
- 
-  
 </script>
