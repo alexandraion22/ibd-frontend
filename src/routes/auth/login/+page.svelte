@@ -28,6 +28,7 @@
             userEmail = user.email;
 
             const token = await user.getIdToken();
+            console.log(token)
             sessionStorage.setItem('auth_token', token);
             sessionStorage.setItem('isAuthenticated', 'true');
             isAuthenticated.set(true);
