@@ -32,7 +32,7 @@
             sessionStorage.setItem('auth_token', token);
             sessionStorage.setItem('isAuthenticated', 'true');
             isAuthenticated.set(true);
-            sessionStorage.setItem('username', username);
+            sessionStorage.setItem('username', userEmail);
             window.location.href = "/";
         } catch (err) {
             error = 'Login failed. Please check your credentials or try again later.';

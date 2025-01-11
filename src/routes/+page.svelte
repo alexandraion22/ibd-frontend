@@ -87,7 +87,7 @@
     }
 
     function seeCollection(id) {
-        console.log(`See collection with ID: ${id}`);
+        window.location.href = `/collections/view_collection?id=${id}`;
     }
 
     function logout() {
