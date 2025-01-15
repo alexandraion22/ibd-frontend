@@ -50,7 +50,7 @@
 
     async function fetchAvailableUsers() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/get_users`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/get_all_users`, {
                 headers: {
                     'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
                 }

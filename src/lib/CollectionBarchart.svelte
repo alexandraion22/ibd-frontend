@@ -2,9 +2,14 @@
   import * as d3 from "d3";
   import { onMount } from 'svelte';
 
-  export let userCollections = [];
+  export let data = {};
 
     onMount(() => {
+
+      const dataArray = Object.entries(data).map(([user, collections]) => ({
+          user,
+          collections
+      }));
           // set the dimensions and margins of the graph
       const margin = {top: 30, right: 30, bottom: 70, left: 60},
           width = 460 - margin.left - margin.right,
@@ -22,7 +27,7 @@
       // X axis => user's name
       const x = d3.scaleBand()
         .range([ 0, width ])
-        .domain(userCollections.map(d => d.user))
+        .domain(dataArray.map(d => d.user))
         .padding(0.2);
 
       svg.append("g")
@@ -32,7 +37,7 @@
           .attr("transform", "translate(-10,0)rotate(-45)")
           .style("text-anchor", "end");
       
-      const maxCollections = Math.max(...userCollections.map(item => item.collections))
+      const maxCollections = Math.max(...dataArray.map(item => item.collections))
     
       const y = d3.scaleLinear()
         .domain([0, maxCollections])
@@ -45,7 +50,7 @@
         );
 
       svg.selectAll("mybar")
-        .data(userCollections)
+        .data(dataArray)
         .join("rect")
           .attr("x", d => x(d.user))
           .attr("width", x.bandwidth())

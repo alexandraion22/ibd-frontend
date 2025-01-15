@@ -56,7 +56,7 @@
           .duration(800)
           .attr("y", d => y(d.y))
           .attr("height", d => height - y(d.y))
-          .delay((d,i) => {console.log(i); return i*100})
+          .delay((d,i) => { return i*100})
 
     });
 

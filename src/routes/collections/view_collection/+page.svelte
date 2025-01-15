@@ -6,7 +6,8 @@
     let collectionData = writable(null);
     let error = '';
 
-    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/collections/get_collection`;
+    const collectionsUrl = `${import.meta.env.VITE_API_BASE_URL}/collections/get_collection`;
+    const usersUrl = `${import.meta.env.VITE_API_BASE_URL}/users/get_users_id`;
 
     onMount(async () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +22,7 @@
     async function fetchCollectionData() {
         error = '';
         try {
-            const response = await fetch(`${apiUrl}/${collectionId}`, {
+            const response = await fetch(`${collectionsUrl}/${collectionId}`, {
                 headers: {
                     'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
                 }
@@ -35,14 +36,50 @@
 
             const data = await response.json();
             collectionData.set(data || null);
+            console.log(collectionData);
+
         } catch (err) {
             console.error(err);
             error = 'An error occurred while fetching collection data.';
         }
     }
 
+    async function getUserName(id) {
+        error = ''
+        try {
+            const res = await fetch(`${usersUrl}/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+                }
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                error = data.message || 'Failed to fetch user details.';
+                return;
+            }
+
+            const name = await res.json();
+            console.log(name)
+            return name;
+
+        } catch (err) {
+            console.error(err);
+            error = 'An error occurred while fetching user data.';
+        }
+    }
+
+    
     function getMembersByRole(members, role) {
-        return Object.entries(members || {}).filter(([_, memberRole]) => memberRole === role).map(([id]) => id);
+        console.log(members)
+        return Object.values(members)
+            .filter(member => member.rights === role)
+            .map(member => member.user_id);
+    }
+
+    function displayUserName(members = {}, role) {
+        let uuid = getMembersByRole(members, role);
+        return getUserName(uuid);
     }
 </script>
 
@@ -156,16 +193,22 @@
                     <div class="section">
                         <h3>🏷️ Name:</h3>
                         {#if data?.name}
-                            <p>{data.name}</p>
+                            <p>{data?.name}</p>
                         {:else}
                             <p class="no-data">No name available</p>
                         {/if}
                     </div>
-
+                    
                     <div class="section">
                         <h3>👤 Owner:</h3>
                         {#if getMembersByRole(data?.members, 'owner').length > 0}
-                            <p>{getMembersByRole(data?.members, 'owner')[0]}</p>
+                            {#await displayUserName(data?.members, 'owner')}
+                                <p>Loading owner...</p>
+                            {:then userName}
+                                <p>{userName}</p>
+                            {:catch}
+                                <p class="no-data">Error loading owner data</p>
+                            {/await}
                         {:else}
                             <p class="no-data">No Owner available</p>
                         {/if}
@@ -176,7 +219,13 @@
                         {#if getMembersByRole(data?.members, 'collaborator').length > 0}
                             <ul>
                                 {#each getMembersByRole(data?.members, 'collaborator') as collaborator}
-                                    <li>{collaborator}</li>
+                                    {#await getUserName(collaborator)}
+                                        <li>Loading collaborator...</li>
+                                    {:then collaboratorName}
+                                        <li>{collaboratorName}</li>
+                                    {:catch}
+                                        <li class="no-data">Error loading collaborator data</li>
+                                    {/await}
                                 {/each}
                             </ul>
                         {:else}
@@ -189,7 +238,13 @@
                         {#if getMembersByRole(data?.members, 'viewer').length > 0}
                             <ul>
                                 {#each getMembersByRole(data?.members, 'viewer') as viewer}
-                                    <li>{viewer}</li>
+                                    {#await getUserName(viewer)}
+                                        <li>Loading viewer...</li>
+                                    {:then viewerName}
+                                        <li>{viewerName}</li>
+                                    {:catch}
+                                        <li class="no-data">Error loading viewer data</li>
+                                    {/await}
                                 {/each}
                             </ul>
                         {:else}
@@ -201,11 +256,13 @@
                         <h3>📍 Locations:</h3>
                         {#if data?.locations}
                             <ul>
-                                {#each Object.entries(data.locations) as [key, location]}
+                                {#each Object.entries(data?.locations) as [key, location]}
                                     <li class="location-item">
-                                        <strong>Coordinates:</strong> {key} <br />
-                                        <strong>Added At:</strong> {location?.added_at || 'N/A'} <br />
-                                        <strong>Name:</strong> {location?.name || 'No name'}
+                                        <strong>Name:</strong> {location?.name || 'No name'} <br/>
+                                        <strong>Type:</strong> {location?.type || 'N/A'} <br/>
+                                        <strong>Coordinates:</strong> {key} <br/>
+                                        <strong>Added At:</strong> {location?.added_at || 'N/A'} 
+                                        
                                     </li>
                                 {/each}
                             </ul>

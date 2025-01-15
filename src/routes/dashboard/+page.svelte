@@ -9,48 +9,104 @@
 
     // this should come from session / lcoal storage
     let name = $state("")
+    let users = $state([])
+    let categories = $state([])
+    let friendsCollections = $state([]);
+    let allLocations = $state([]);
+    let userIds = $state({})
 
-    // get friends => get len(collections) by owner id (for each friend) maybe only if i added this collection
-    const friendsCollections = [
-        { user: "Alex", collections: 10 },
-        { user: "Flavia", collections: 3 },
-        { user: "Mihai", collections: 7 },
-        { user: "Florin", collections: 5 },
-        { user: "Arti", collections: 0 },
-    ]
+    const allUsersUrl = `${import.meta.env.VITE_API_BASE_URL}/users/get_all_users_requester`;
+    const getUserById = `${import.meta.env.VITE_API_BASE_URL}/users/get_users_id`;
+    const allLocationsUrl = `${import.meta.env.VITE_API_BASE_URL}/locations/get_all`;
 
+    async function getUserName(id) {
+        
+        try {
+            let error = ''
+            const res = await fetch(`${getUserById}/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+                }
+            });
 
-    // contributor will probably be an id, then we get the names based on that.
-    const firebaseData = [
-        { coord: "1" , name: "Joe's Diner", type: "restaurant", contributor: "Alex" },
-        { coord: "2", name: "Fitness World", type: "gym", contributor: "Flavia" },
-        { coord: "3", name: "The Tipsy Tavern", type: "bar", contributor: "Florin" },
-        { coord: "4", name: "Pasta Paradise", type: "restaurant", contributor: "Mihai" },
-        { coord: "5", name: "Gold's Gym", type: "gym", contributor: "Arti" },
-        { coord: "6", name: "Bella's Bistro", type: "restaurant", contributor: "Alex" },
-        { coord: "7", name: "Powerhouse Fitness", type: "gym", contributor: "Flavia" },
-        { coord: "8", name: "The Drunken Duck", type: "bar", contributor: "Mihai" },
-        { coord: "9", name: "Spaghetti Station", type: "restaurant", contributor: "Florin" },
-        { coord: "10", name: "Strength Zone", type: "gym", contributor: "Arti" },
-        { coord: "11", name: "The Wobbly Whisk", type: "restaurant", contributor: "Mihai" },
-        { coord: "12", name: "FlexFit Gym", type: "gym", contributor: "Flavia" },
-        { coord: "13", name: "The Cozy Pub", type: "bar", contributor: "Alex" },
-        { coord: "14", name: "Taco Town", type: "restaurant", contributor: "Florin" },
-        { coord: "15", name: "Barbell Haven", type: "gym", contributor: "Arti" },
-    ]
+            if (!res.ok) {
+                const data = await res.json();
+                error = data.message || 'Failed to fetch user details.';
+                return;
+            }
+
+            const name = await res.json();
+            return name;
+
+        } catch (err) {
+            console.error(err);
+            error = 'An error occurred while fetching user data.';
+        }
+    }
+
+    async function getAllUsers() {
+        const response = await fetch(allUsersUrl, {
+            headers: {
+                'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+            }
+        });     
+        return response.json();
+    }
+
+    async function getFriendsCollections() {
+        try {
+            let error = '';
+            let ids = []
+            const allUsersData = await getAllUsers();
+            const collectionsMap = {};
+            const userNames = [];
+
+            for (const userId of Object.keys(allUsersData)) {
+                const user = allUsersData[userId];
+                const userName = await getUserName(userId); // Fetch user name dynamically
+                ids.push({id: userId, name: userName});
+                userNames.push(userName);
+
+                // Count collections where the role is "owner"
+                const ownershipCount = Object.values(user.collections).filter(
+                    (role) => role === "owner"
+                ).length;
+
+                collectionsMap[userName] = ownershipCount;
+            }
+            
+            userIds = ids.reduce((acc, item) => {
+                acc[item.id] = item.name;
+                 return acc;
+            }, {});
+
+            friendsCollections = collectionsMap;
+
+            users = userNames; 
+
+        } catch (err) {
+            console.error("Error fetching friends collections:", err);
+        }
+    }
+
+    async function getAllLocations() {
+        const res = await fetch(allLocationsUrl, {
+            headers: {
+                'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+            }
+        });
+
+        allLocations = await res.json(); 
+        categories = Array.from(new Set(allLocations.map(p => p.type)));
+    }
 
     const ALL_USERS = "All users";
-    const categories = Array.from(new Set(firebaseData.map(p => p.type)));
-    const users = Array.from(new Set(friendsCollections.map(item => item.user)));
-    console.log(users)
-    console.log(categories)
-
 
     let dropdownCategoriesData = $state([])
     let dropdownUsersData = $state([])
 
-    let selectedUser = $state(users[0])
-    let selectedCategory = $state(categories[0])
+    let selectedUser = $state("")
+    let selectedCategory = $state("")
 
     let userDropdownToggle = $state(false);
     let catDropdrownToggle = $state(false);
@@ -79,10 +135,9 @@
     
     function getUserChartData(userSel) {
         let chartData = categories.map(c => ({x:c, y:0}));
-
-        firebaseData.forEach( place => {
-            if(place.contributor === userSel) {
-                const placeType = chartData.find(item => item.x === place.type);
+        allLocations.forEach( place => {
+            if(userIds[place.user] === userSel) {
+                const placeType = chartData.find(item => item.x?.toLowerCase() === place.type?.toLowerCase());
                 
                 if(placeType) {
                     placeType.y++;
@@ -98,41 +153,50 @@
     function getCategoriesChartData(categSel, xValues) {
         let chartData = xValues.map(u => ({x:u, y:0}));
 
-        firebaseData.forEach(place => {
+        allLocations.forEach(place => {
             if (place.type === categSel) {
-                const contributorVal = chartData.find(item => item.x === place.contributor);
-                if (contributorVal) {
-                    contributorVal.y++;
+                const ownerVal = chartData.find(item => item.x?.toLowerCase() === userIds[place.user]?.toLowerCase());
+                if (ownerVal) {
+                    ownerVal.y++;
                 }
             }
         });
 
-        console.log(chartData)
         return chartData;
               
     }
 
-    $effect(() => {
-        dropdownCategoriesData = getCategoriesChartData(selectedCategory, users);
+
+    $effect(async () => {
+        if (users.length > 0 && selectedUser === "") {
+            selectedUser = users[0]; 
+        }
+
+        if(categories.length > 0 && categories === "") {
+            selectedCategory = categories.find(it => it !== "Unknown"); 
+        }
     });
 
-    $effect(() => {
-        dropdownUsersData = getUserChartData(selectedUser);
-    })
+    const handleClickOutside = (event) => {
+        if (!event.target.closest(".dropdown")) {
+            userDropdownToggle = false;
+            catDropdrownToggle = false;
+        }
+    };
 
-    onMount(() => {
+    onMount(async () => {
         name = sessionStorage.getItem('username');
-        const handleClickOutside = (event) => {
-            if (!event.target.closest(".dropdown")) {
-                userDropdownToggle = false;
-                catDropdrownToggle = false;
-            }
-        };
+        await getFriendsCollections();
+        await getAllLocations()
+
+        if(categories.length > 0 && selectedCategory === "") {
+            selectedCategory = categories.find(it => it !== "Unknown");
+        }
+
         document.addEventListener("click", handleClickOutside);
 
-        return () => {
-            document.removeEventListener("click", handleClickOutside);
-        };
+        dropdownUsersData = getUserChartData(selectedUser);
+        dropdownCategoriesData = getCategoriesChartData(selectedCategory, users);
     });
 
 </script>
@@ -142,6 +206,11 @@
 
         <div id="greeting" class="w-fill h-10 pb-12">
             <h1 class="text-3xl">Hello, {name}!</h1>
+        </div>
+
+        <div id="stats-type">
+            <p>Please choose a way to visualize the data</p>
+
         </div>
 
         <div id="dropdowns" class="flex space-x-40">
@@ -160,15 +229,17 @@
                             e.stopPropagation();
                             toggleCategoryDropdown();
                         }}>
-                        {selectedCategory}
+                        {selectedCategory || "Select Category"}
                     </button>
                     {#if catDropdrownToggle}
                         <ul class="flex flex-col absolute z-10 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-md">
                             {#each categories as cat}
-                                <button class="py-2 px-3 text-left hover:bg-gray-100 cursor-pointer"
-                                    onclick={() => handleCategorySelection(cat)}>
-                                    {cat}
-                                </button>
+                                {#if cat !== 'Unknown'}
+                                    <button class="py-2 px-3 text-left hover:bg-gray-100 cursor-pointer"
+                                        onclick={() => handleCategorySelection(cat)}>
+                                        {cat}
+                                    </button>
+                                {/if}    
                             {/each}
                         </ul>
                     {/if}
@@ -194,15 +265,19 @@
                     {#if userDropdownToggle}
                         <ul class="flex flex-col absolute z-10 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-md">
                             {#each users as user}
-                                <button class="py-2 px-3 text-left hover:bg-gray-100 cursor-pointer"
-                                    onclick={() => handleUsersSelection(user)}>
-                                    {user}
-                                </button>
+                                {#if user !== 'Unknown'}
+                                    <button class="py-2 px-3 text-left hover:bg-gray-100 cursor-pointer"
+                                        onclick={() => handleUsersSelection(user)}>
+                                        {user}
+                                    </button>
+                                {/if}
                             {/each}
                         </ul>
                     {/if}
                 </div>
             </div>
+
+        <h1 class="pl-10">Your places split into categories</h1>
     </div>
         
 
@@ -219,16 +294,18 @@
             </div>
             {/key}
 
+            {#key allLocations}
             <div id="piechart-categories">
-                <h1 class="pl-28">Your places split into categories</h1>
-                <PlacesTypesRatioPie places={firebaseData}/>
+                <PlacesTypesRatioPie places={allLocations}/>
             </div>
+            {/key}
 
+            {#key friendsCollections}
             <div id="user-collection-number">
-                <h1 class="pl-28">Number of collections per user</h1>
-                <CollectionBarchart userCollections={friendsCollections}/>
+                <h1 class="pl-28 pt-10">Number of collections per user</h1>
+                <CollectionBarchart data={friendsCollections}/>
             </div>
-
+            {/key}
         </div>
     </div>
 

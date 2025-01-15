@@ -1,7 +1,8 @@
 <script>
-    import logo from '$lib/assets/city-spotter-bg.png';
     import { isAuthenticated } from '../stores/auth';
     import { onMount } from 'svelte';
+    import logo from '$lib/assets/city-spotter-bg.png';
+
 
     let authenticated = false;
     isAuthenticated.subscribe(value => {
@@ -14,6 +15,7 @@
     $: totalPages = Math.max(1, Math.ceil(collections.length / itemsPerPage));
     let error = '';
 
+    
     async function fetchCollections() {
         try {
             const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/collections/get_collections`, {
@@ -44,16 +46,16 @@
         }
     }
 
-    onMount(() => {
-        fetchCollections();
-    });
-
     function nextPage() {
         if (currentPage < totalPages) currentPage++;
     }
 
     function prevPage() {
         if (currentPage > 1) currentPage--;
+    }
+
+    function addLocation(collectionId) {
+        window.location.href = `/collections/${collectionId}/map`;
     }
 
     function editCollection(id, name) {
@@ -103,6 +105,11 @@
     function newCollection() {
         window.location.href = "/collections/new_collection";
     }
+
+    onMount(() => {
+        fetchCollections();
+    });
+
 </script>
 
 <style>
@@ -262,6 +269,7 @@
                 <div class="collection-item">
                     <span>{collection.name}</span>
                     <div class="collection-buttons">
+                        <button class="add-btn" on:click={() => addLocation(collection.id)}>➕</button>
                         <button class="edit-btn" on:click={() => editCollection(collection.id, collection.name)}>Edit</button>
                         <button class="delete-btn" on:click={() => deleteCollection(collection.id)}>Delete</button>
                         <button class="see-btn" on:click={() => seeCollection(collection.id)}>View</button>
