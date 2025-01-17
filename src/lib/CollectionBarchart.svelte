@@ -23,7 +23,6 @@
         .append("g")
           .attr("transform", `translate(${margin.left}, ${margin.top})`);
     
-      
       // X axis => user's name
       const x = d3.scaleBand()
         .range([ 0, width ])

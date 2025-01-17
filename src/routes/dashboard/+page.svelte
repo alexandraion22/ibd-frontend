@@ -8,12 +8,13 @@
     import CategoriesDropdownChart from "$lib/CategoriesDropdownChart.svelte";
 
     // this should come from session / lcoal storage
-    let name = $state("")
-    let users = $state([])
-    let categories = $state([])
+    let name = $state("");
+    let users = $state([]);
+    let categories = $state([]);
+    let collections = $state([]);
     let friendsCollections = $state([]);
     let allLocations = $state([]);
-    let userIds = $state({})
+    let userIds = $state({});   
 
     const allUsersUrl = `${import.meta.env.VITE_API_BASE_URL}/users/get_all_users_requester`;
     const getUserById = `${import.meta.env.VITE_API_BASE_URL}/users/get_users_id`;
@@ -30,7 +31,7 @@
             });
 
             if (!res.ok) {
-                const data = await res.json();
+                const data = await res.json();   
                 error = data.message || 'Failed to fetch user details.';
                 return;
             }
@@ -97,20 +98,29 @@
         });
 
         allLocations = await res.json(); 
+        collections = Array.from(new Set(allLocations.map(p => p.collection)));
+        collections.unshift("all");
         categories = Array.from(new Set(allLocations.map(p => p.type)));
     }
 
     const ALL_USERS = "All users";
+
+
 
     let dropdownCategoriesData = $state([])
     let dropdownUsersData = $state([])
 
     let selectedUser = $state("")
     let selectedCategory = $state("")
+    let selectedCollection = $state("");
 
     let userDropdownToggle = $state(false);
     let catDropdrownToggle = $state(false);
+    let colDropdownToggle = $state(false);
 
+    function toggleCollectionDropdown() {
+        colDropdownToggle = !colDropdownToggle;
+    }
     function toggleCategoryDropdown() {
         catDropdrownToggle = !catDropdrownToggle;
     }
@@ -119,61 +129,100 @@
         userDropdownToggle = !userDropdownToggle;
     }
 
+    function handleCollectionSelection(selectedValue) {
+        selectedCollection = selectedValue;
+        dropdownCategoriesData = getCategoriesChartData(selectedCategory, selectedCollection);
+        dropdownUsersData = getUserChartData(selectedUser, selectedCollection);
+    }
+
     /**
      * Handles selection in the first dropdown.     
      * @param selectedValue selected place category
      */
     function handleCategorySelection(selectedValue) {
         selectedCategory = selectedValue;
-        dropdownCategoriesData = getCategoriesChartData(selectedCategory, users);
+        dropdownCategoriesData = getCategoriesChartData(selectedCategory);
+        dropdownCategoriesData = getCategoriesChartData(selectedCategory, selectedCollection);
     }
 
     function handleUsersSelection(selectedValue) {
         selectedUser = selectedValue;
-        dropdownUsersData = getUserChartData(selectedUser);
+        // if i omit the if sel coll, it should get default val.    
+        dropdownUsersData = getUserChartData(selectedUser, selectedCollection);
     }
     
-    function getUserChartData(userSel) {
+    function getUserChartData(userSel, collection="all") {
         let chartData = categories.map(c => ({x:c, y:0}));
-        allLocations.forEach( place => {
-            if(userIds[place.user] === userSel) {
-                const placeType = chartData.find(item => item.x?.toLowerCase() === place.type?.toLowerCase());
-                
-                if(placeType) {
-                    placeType.y++;
+
+        if(collection === "all") {
+            allLocations.forEach( place => {
+                if(userIds[place.user] === userSel) {
+                    const placeType = chartData.find(item => item.x?.toLowerCase() === place.type?.toLowerCase());
+                    
+                    if(placeType) {
+                        placeType.y++;
+                    }
                 }
-            
-            }
-        });
+            });
+        } else {
+            allLocations.forEach( place => {
+                if(userIds[place.user] === userSel) {
+                    const placeType = chartData.find( item => 
+                        item.x?.toLowerCase() === place.type?.toLowerCase() &&
+                        place.collection?.toLowerCase() === collection?.toLowerCase()
+                    );
+                    
+                    if(placeType) {
+                        placeType.y++;
+                    }
+                }
+            });
+        }
 
         return chartData;
     }
 
-    //TODO remove xvalues
-    function getCategoriesChartData(categSel, xValues) {
-        let chartData = xValues.map(u => ({x:u, y:0}));
-
-        allLocations.forEach(place => {
-            if (place.type === categSel) {
-                const ownerVal = chartData.find(item => item.x?.toLowerCase() === userIds[place.user]?.toLowerCase());
-                if (ownerVal) {
-                    ownerVal.y++;
+    function getCategoriesChartData(categSel, collection="all") {
+        let chartData = users.map(u => ({x:u, y:0}));
+        if(collection === "all") {
+            allLocations.forEach(place => {
+                if (place.type === categSel) {
+                    const ownerVal = chartData.find(item => item.x?.toLowerCase() === userIds[place.user]?.toLowerCase());
+                    if (ownerVal) {
+                        ownerVal.y++;
+                    }
                 }
-            }
-        });
+            });   
+        } else {
+            allLocations.forEach(place => {
+                if (place.type === categSel) {
+                    const ownerVal = chartData.find(item =>
+                        item.x?.toLowerCase() === userIds[place.user]?.toLowerCase() &&
+                        place.collection?.toLowerCase() === collection?.toLowerCase()
+                    );
+                    if (ownerVal) {
+                        ownerVal.y++;
+                    }
+                }
+            });   
+        }
+
 
         return chartData;
               
     }
-
 
     $effect(async () => {
         if (users.length > 0 && selectedUser === "") {
             selectedUser = users[0]; 
         }
 
-        if(categories.length > 0 && categories === "") {
+        if(categories.length > 0 && selectedCategory === "") {
             selectedCategory = categories.find(it => it !== "Unknown"); 
+        }
+
+        if(collections.length > 0 && selectedCollection === "") {
+            selectedCollection = collections[0];
         }
     });
 
@@ -181,6 +230,7 @@
         if (!event.target.closest(".dropdown")) {
             userDropdownToggle = false;
             catDropdrownToggle = false;
+            colDropdownToggle = false;
         }
     };
 
@@ -196,7 +246,7 @@
         document.addEventListener("click", handleClickOutside);
 
         dropdownUsersData = getUserChartData(selectedUser);
-        dropdownCategoriesData = getCategoriesChartData(selectedCategory, users);
+        dropdownCategoriesData = getCategoriesChartData(selectedCategory);
     });
 
 </script>
@@ -208,10 +258,31 @@
             <h1 class="text-3xl">Hello, {name}!</h1>
         </div>
 
-        <div id="stats-type">
-            <p>Please choose a way to visualize the data</p>
-
+        <div id="collection-stats" class="flex flex-row content-start items-center space-x-4">
+            <h1 class="text-2xl">Filter by collection</h1>
+                <div class="relative">
+                    <button class="w-26 bg-gray-100 border border-gray-300 text-gray-800 rounded-md py-2 px-3 text-left hover:bg-gray-200"
+                        aria-haspopup="listbox" onclick={(e) => {
+                            e.stopPropagation();
+                            toggleCollectionDropdown();
+                        }}>
+                        {selectedCollection}
+                    </button>
+                    {#if colDropdownToggle}
+                        <ul class="flex flex-col absolute z-10 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-md">
+                            {#each collections as coll}
+                                {#if coll !== 'Unknown'}
+                                    <button class="py-2 px-3 text-left hover:bg-gray-100 cursor-pointer"
+                                        onclick={() => handleCollectionSelection(coll)}>
+                                        {coll}
+                                    </button>
+                                {/if}    
+                            {/each}
+                        </ul>
+                    {/if}
+                </div>
         </div>
+
 
         <div id="dropdowns" class="flex space-x-40">
 
@@ -229,7 +300,7 @@
                             e.stopPropagation();
                             toggleCategoryDropdown();
                         }}>
-                        {selectedCategory || "Select Category"}
+                        {selectedCategory}
                     </button>
                     {#if catDropdrownToggle}
                         <ul class="flex flex-col absolute z-10 mt-1 w-48 bg-white border border-gray-300 rounded-md shadow-md">

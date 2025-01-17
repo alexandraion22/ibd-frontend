@@ -1,10 +1,13 @@
 <script>
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
 
   let map;
   let apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   let customPopup = null;
   let mapContainer;
+  let addLocationUrl = `${import.meta.env.VITE_API_BASE_URL}/locations/create_location`;
+  let collectionId = $page.params.collectionId;
 
   onMount(() => {
     loadGoogleMapsScript()
@@ -85,12 +88,19 @@
   }
 
   async function handleAddLocation(placeInfo) {
+    let coordLat = placeInfo?.coordinates?.lat;
+    let coordLng = placeInfo?.coordinates?.lng;
+    let coords = coordLat + "-" + coordLng;
+    coords = coords.replaceAll(".", "-");
+    placeInfo.coordinates = coords;
+
     try {
-      const response = await fetch('/api/locations', {
+      const response = await fetch(`${addLocationUrl}/${collectionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
+          'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+          },
         body: JSON.stringify(placeInfo),
       });
 

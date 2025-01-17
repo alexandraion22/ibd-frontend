@@ -6,6 +6,7 @@
     let collectionData = writable(null);
     let error = '';
 
+    const deleteLocationUrl = `${import.meta.env.VITE_API_BASE_URL}/locations`;
     const collectionsUrl = `${import.meta.env.VITE_API_BASE_URL}/collections/get_collection`;
     const usersUrl = `${import.meta.env.VITE_API_BASE_URL}/users/get_users_id`;
 
@@ -60,7 +61,6 @@
             }
 
             const name = await res.json();
-            console.log(name)
             return name;
 
         } catch (err) {
@@ -71,7 +71,6 @@
 
     
     function getMembersByRole(members, role) {
-        console.log(members)
         return Object.values(members)
             .filter(member => member.rights === role)
             .map(member => member.user_id);
@@ -81,6 +80,31 @@
         let uuid = getMembersByRole(members, role);
         return getUserName(uuid);
     }
+
+    async function deleteLocation(coords) {
+        try {
+            const response = await fetch(`${deleteLocationUrl}/${collectionId}/${coords}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                console.error('Failed to delete location:', data.message || 'Unknown error');
+                return;
+            }
+
+            Object.entries(collectionData?.locations) as [key, location]
+            collectionData = collectionData.filter(coll => coll.locations !== coords);
+
+        } catch (err) {
+            console.error('Error while deleting location:', err);
+        }
+    }
+
+
 </script>
 
 <style>
@@ -177,6 +201,14 @@
         font-size: 1.2rem;
         color: #6b7280;
     }
+
+    .delete-btn {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .delete-btn:hover { background-color: #c82333; }
+
 </style>
 
 <div class="container">
@@ -257,15 +289,20 @@
                         {#if data?.locations}
                             <ul>
                                 {#each Object.entries(data?.locations) as [key, location]}
-                                    <li class="location-item">
-                                        <strong>Name:</strong> {location?.name || 'No name'} <br/>
-                                        <strong>Type:</strong> {location?.type || 'N/A'} <br/>
-                                        <strong>Coordinates:</strong> {key} <br/>
-                                        <strong>Added At:</strong> {location?.added_at || 'N/A'} 
-                                        
-                                    </li>
+                                    <div id="location-box" class="flex">
+                                        <li class="location-item">
+                                            <strong>Name:</strong> {location?.name || 'No name'} <br/>
+                                            <strong>Type:</strong> {location?.type || 'N/A'} <br/>
+                                            <strong>Address:</strong> {location?.address || 'N/A'} <br/>
+                                            <strong>Coordinates:</strong> {key} <br/>
+                                            <strong>Added At:</strong> {location?.added_at || 'N/A'} 
+                                        </li>
+
+                                        <button class="delete-btn" on:click={() => deleteLocation(key)}>Delete</button>
+                                    </div>
                                 {/each}
                             </ul>
+                           
                         {:else}
                             <p class="no-data">No Locations available</p>
                         {/if}

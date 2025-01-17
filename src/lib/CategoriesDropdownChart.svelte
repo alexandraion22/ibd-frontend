@@ -17,6 +17,17 @@
         .append("g")
           .attr("transform", `translate(${margin.left}, ${margin.top})`);
     
+    const allZero = dropdownChartData.every(d => d.y === 0);
+
+    if (allZero) {
+      svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("No data available");
+      return; 
+    }
       
       const x = d3.scaleBand()
         .range([ 0, width ])
@@ -35,6 +46,7 @@
       const y = d3.scaleLinear()
         .domain([0, maxCollections])
         .range([ height, 0]);
+        
       svg.append("g")
         .call(
           d3.axisLeft(y)
