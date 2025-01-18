@@ -19,6 +19,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+
     async function handleLogin() {
         error = '';
 
@@ -26,9 +27,9 @@
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             userEmail = user.email;
-
+            let userId = user.uid
+            sessionStorage.setItem('user_id', userId);
             const token = await user.getIdToken();
-            console.log(token)
             sessionStorage.setItem('auth_token', token);
             sessionStorage.setItem('isAuthenticated', 'true');
             isAuthenticated.set(true);

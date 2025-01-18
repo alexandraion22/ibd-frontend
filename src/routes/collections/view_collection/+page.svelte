@@ -5,6 +5,7 @@
     let collectionId = '';
     let collectionData = writable(null);
     let error = '';
+    let owner = $state("")
 
     const deleteLocationUrl = `${import.meta.env.VITE_API_BASE_URL}/locations`;
     const collectionsUrl = `${import.meta.env.VITE_API_BASE_URL}/collections/get_collection`;
@@ -38,6 +39,8 @@
             const data = await response.json();
             collectionData.set(data || null);
             console.log(collectionData);
+            owner = getMembersByRole(data?.members, 'owner');
+
 
         } catch (err) {
             console.error(err);
@@ -68,7 +71,6 @@
             error = 'An error occurred while fetching user data.';
         }
     }
-
     
     function getMembersByRole(members, role) {
         return Object.values(members)
@@ -79,6 +81,11 @@
     function displayUserName(members = {}, role) {
         let uuid = getMembersByRole(members, role);
         return getUserName(uuid);
+    }
+
+    function isUserOwner(col_owner) {
+        let id = sessionStorage.getItem('user_id')
+        return col_owner?.[0] === id;
     }
 
     async function deleteLocation(coords) {
@@ -95,9 +102,7 @@
                 console.error('Failed to delete location:', data.message || 'Unknown error');
                 return;
             }
-
-            Object.entries(collectionData?.locations) as [key, location]
-            collectionData = collectionData.filter(coll => coll.locations !== coords);
+            fetchCollectionData()
 
         } catch (err) {
             console.error('Error while deleting location:', err);
@@ -205,6 +210,11 @@
     .delete-btn {
         background-color: #dc3545;
         color: white;
+        margin-left: 8px;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
     }
 
     .delete-btn:hover { background-color: #c82333; }
@@ -289,16 +299,17 @@
                         {#if data?.locations}
                             <ul>
                                 {#each Object.entries(data?.locations) as [key, location]}
-                                    <div id="location-box" class="flex">
-                                        <li class="location-item">
+                                    <div id="location-box" class="flex items-center max-h-max space-x-4">
+                                        <li class="location-item h-max">
                                             <strong>Name:</strong> {location?.name || 'No name'} <br/>
                                             <strong>Type:</strong> {location?.type || 'N/A'} <br/>
                                             <strong>Address:</strong> {location?.address || 'N/A'} <br/>
                                             <strong>Coordinates:</strong> {key} <br/>
                                             <strong>Added At:</strong> {location?.added_at || 'N/A'} 
                                         </li>
-
-                                        <button class="delete-btn" on:click={() => deleteLocation(key)}>Delete</button>
+                                        {#if owner !== "" && isUserOwner(owner)}
+                                            <button class="delete-btn h-1/4" onclick={() => deleteLocation(key)}>Delete</button>
+                                        {/if}
                                     </div>
                                 {/each}
                             </ul>

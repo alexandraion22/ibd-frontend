@@ -1,5 +1,4 @@
 <script>
-    import { writable } from 'svelte/store';
     import { onMount } from 'svelte';
 
 
@@ -17,11 +16,6 @@
             error = 'Collection name cannot be empty.';
             return;
         }
-
-        // if (selectedLocations.length === 0) {
-        //     error = 'Please select at least one location on the map.';
-        //     return;
-        // }
 
         try {
             const response = await fetch(apiUrl, {
