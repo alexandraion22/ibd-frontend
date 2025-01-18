@@ -14,6 +14,7 @@
     let collections = $state([]);
     let friendsCollections = $state([]);
     let allLocations = $state([]);
+    let piechartData = $state([])
     let userIds = $state({});   
 
     const allUsersUrl = `${import.meta.env.VITE_API_BASE_URL}/users/get_all_users_requester`;
@@ -133,6 +134,11 @@
         selectedCollection = selectedValue;
         dropdownCategoriesData = getCategoriesChartData(selectedCategory, selectedCollection);
         dropdownUsersData = getUserChartData(selectedUser, selectedCollection);
+        if(selectedValue === "all"){
+            piechartData = allLocations;
+        } else {
+            piechartData = allLocations.filter(loc => loc?.collection === selectedCollection);
+        }
     }
 
     /**
@@ -247,6 +253,7 @@
 
         dropdownUsersData = getUserChartData(selectedUser);
         dropdownCategoriesData = getCategoriesChartData(selectedCategory);
+        piechartData = allLocations;
     });
 
 </script>
@@ -365,9 +372,9 @@
             </div>
             {/key}
 
-            {#key allLocations}
+            {#key piechartData}
             <div id="piechart-categories">
-                <PlacesTypesRatioPie places={allLocations}/>
+                <PlacesTypesRatioPie places={piechartData}/>
             </div>
             {/key}
 
