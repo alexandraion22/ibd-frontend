@@ -172,6 +172,34 @@
         }
     }
 
+    async function removeUser(userId) {
+        error = '';
+        success = '';
+        const owner_id = getMembersByRole(get(collectionData)?.members, 'owner')[0];
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/collections/remove_user`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+                },
+                body: JSON.stringify({ user_id: userId, collection_id: collectionId, owner_id: owner_id }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                error = data.message || 'Failed to remove user.';
+                return;
+            }
+
+            await fetchCollectionData();
+            success = 'User removed successfully!';
+        } catch (err) {
+            console.error(err);
+            error = 'Error removing user.';
+        }
+    }
+
     function filterUsers(users, excludeList) {
         return users.filter(user => !excludeList.includes(user.id));
     }
@@ -296,25 +324,6 @@
         padding: 0;
     }
 
-    /* .user-item {
-        padding: 8px 0;
-        border-bottom: 1px solid #ddd;
-    } */
-
-    .back-btn {
-        text-decoration: none;
-        color: #3498db;
-        font-weight: 600;
-        font-size: 1rem;
-        margin-top: 24px;
-        display: block;
-        text-align: center;
-    }
-
-    .back-btn:hover {
-        color: #2980b9;
-    }
-
     .user-item {
         display: flex;
         justify-content: space-between;
@@ -362,6 +371,7 @@
             <div class="card">
                 <h2 class="title">Edit Collection</h2>
 
+                <!-- Update Collection Name Section -->
                 <div class="section">
                     <h3>Update Collection Name</h3>
                     {#if data?.name}
@@ -384,6 +394,7 @@
                     {/if}
                 </div>
 
+                <!-- Add Collaborator Section -->
                 <div class="section">
                     <h3>Add New Collaborator</h3>
                     <div class="input-container">
@@ -405,18 +416,23 @@
                             <p class="success" style="color: green;">{success}</p>
                         {/if}
                     {/if}
+
                     {#if getMembersByRole(data?.members, 'collaborator').length > 0}
                         <div class="list">
                             <h4 style="font-weight: bold;">Current Collaborators:</h4>
                             <ul class="user-list">
                                 {#each filterCollaborators($availableUsers, getMembersByRole(data?.members, 'collaborator')) as user}
-                                    <li class="user-item">{user.email}</li>
+                                    <li class="user-item">
+                                        <span class="user-email">{user.email}</span>
+                                        <button class="delete-btn" on:click={() => removeUser(user.id)}>Delete</button>
+                                    </li>
                                 {/each}
                             </ul>
                         </div>
                     {/if}
                 </div>
 
+                <!-- Add Viewer Section -->
                 <div class="section">
                     <h3>Add New Viewer</h3>
                     <div class="input-container">
@@ -445,7 +461,7 @@
                                 {#each filterViewers($availableUsers, getMembersByRole(data?.members, 'viewer')) as user}
                                     <li class="user-item">
                                         <span class="user-email">{user.email}</span>
-                                        <button class="delete-btn" on:click={() => removeViewer(user.id)}>Delete</button>
+                                        <button class="delete-btn" on:click={() => removeUser(user.id)}>Delete</button>
                                     </li>
                                 {/each}
                             </ul>

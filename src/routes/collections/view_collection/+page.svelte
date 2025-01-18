@@ -1,11 +1,11 @@
 <script>
     import { onMount } from 'svelte';
-    import { writable } from 'svelte/store';
+    import { writable, get } from 'svelte/store';
 
     let collectionId = '';
     let collectionData = writable(null);
     let error = '';
-    let owner = $state("")
+    let owner = writable('');
 
     const deleteLocationUrl = `${import.meta.env.VITE_API_BASE_URL}/locations`;
     const collectionsUrl = `${import.meta.env.VITE_API_BASE_URL}/collections/get_collection`;
@@ -38,10 +38,8 @@
 
             const data = await response.json();
             collectionData.set(data || null);
-            console.log(collectionData);
-            owner = getMembersByRole(data?.members, 'owner');
-
-
+            const owners = getMembersByRole(data?.members, 'owner');
+            owner.set(owners.length > 0 ? owners[0] : '');
         } catch (err) {
             console.error(err);
             error = 'An error occurred while fetching collection data.';
@@ -49,7 +47,6 @@
     }
 
     async function getUserName(id) {
-        error = ''
         try {
             const res = await fetch(`${usersUrl}/${id}`, {
                 headers: {
@@ -59,33 +56,26 @@
 
             if (!res.ok) {
                 const data = await res.json();
-                error = data.message || 'Failed to fetch user details.';
-                return;
+                throw new Error(data.message || 'Failed to fetch user details.');
             }
 
             const name = await res.json();
             return name;
-
         } catch (err) {
             console.error(err);
-            error = 'An error occurred while fetching user data.';
+            throw err;
         }
     }
-    
+
     function getMembersByRole(members, role) {
         return Object.values(members)
             .filter(member => member.rights === role)
             .map(member => member.user_id);
     }
 
-    function displayUserName(members = {}, role) {
-        let uuid = getMembersByRole(members, role);
-        return getUserName(uuid);
-    }
-
-    function isUserOwner(col_owner) {
-        let id = sessionStorage.getItem('user_id')
-        return col_owner?.[0] === id;
+    function isUserOwner(colOwner) {
+        const id = sessionStorage.getItem('user_id');
+        return colOwner === id;
     }
 
     async function deleteLocation(coords) {
@@ -102,14 +92,11 @@
                 console.error('Failed to delete location:', data.message || 'Unknown error');
                 return;
             }
-            fetchCollectionData()
-
+            fetchCollectionData();
         } catch (err) {
             console.error('Error while deleting location:', err);
         }
     }
-
-
 </script>
 
 <style>
@@ -120,105 +107,99 @@
         justify-content: center;
         padding: 20px;
         min-height: 100vh;
-        background: linear-gradient(to bottom, #f9fafb, #e5e7eb);
+        background: linear-gradient(to bottom, #ffffff, #f4f4f4);
     }
 
     .card {
-        background: white;
+        background: #ffffff;
         border-radius: 12px;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         padding: 24px;
         margin: 12px;
         width: 90%;
-        max-width: 700px;
-        text-align: center;
-        transition: transform 0.3s ease-in-out;
+        max-width: 800px;
+        transition: box-shadow 0.3s ease-in-out;
     }
 
     .card:hover {
-        transform: translateY(-4px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
     }
 
     .title {
-        font-size: 2rem;
+        font-size: 1.8rem;
         font-weight: bold;
-        color: #1f2937;
-        margin-bottom: 20px;
+        color: #333333;
+        text-align: center;
+        margin-bottom: 24px;
+        padding-bottom: 4px;
     }
 
     .section {
         margin-top: 16px;
-        text-align: left;
     }
 
     .section h3 {
         font-size: 1.2rem;
-        font-weight: 600;
-        color: #374151;
+        font-weight: bold;
+        color: #555555;
         margin-bottom: 8px;
     }
 
-    .section p {
-        font-size: 1rem;
-        color: #4b5563;
-    }
-
     .no-data {
-        color: #9ca3af;
+        color: #888888;
         font-style: italic;
     }
 
     .error {
-        color: #dc2626;
+        color: #d9534f;
         margin-top: 20px;
         font-size: 1rem;
+        text-align: center;
     }
 
     .location-item {
-        background: #f3f4f6;
+        background: #f9f9f9;
         border-radius: 8px;
         margin: 8px 0;
-        padding: 12px;
+        padding: 16px;
         text-align: left;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .location-item strong {
-        font-weight: 600;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
 
     .back-btn {
         margin-top: 24px;
         text-decoration: none;
-        background: #2563eb;
+        background: #007bff;
         color: white;
         padding: 10px 20px;
         border-radius: 8px;
         font-weight: 600;
-        transition: background 0.3s;
+        transition: background 0.3s ease;
+        text-align: center;
     }
 
     .back-btn:hover {
-        background: #1d4ed8;
+        background: #0056b3;
     }
 
     .loading {
         font-size: 1.2rem;
-        color: #6b7280;
+        color: #666666;
     }
 
     .delete-btn {
         background-color: #dc3545;
         color: white;
         margin-left: 8px;
-        padding: 5px 10px;
+        padding: 6px 12px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 0.9rem;
     }
 
-    .delete-btn:hover { background-color: #c82333; }
-
+    .delete-btn:hover {
+        background-color: #c82333;
+    }
 </style>
 
 <div class="container">
@@ -230,34 +211,28 @@
         {:then data}
             {#if data}
                 <div class="card">
-                    <h2 class="title">📦 Collection Details</h2>
+                    <h2 class="title">Collection Details</h2>
 
                     <div class="section">
-                        <h3>🏷️ Name:</h3>
-                        {#if data?.name}
-                            <p>{data?.name}</p>
-                        {:else}
-                            <p class="no-data">No name available</p>
-                        {/if}
+                        <h3 style="display: inline; margin-right: 8px;">Collection Name:</h3>
+                        <span>{data?.name || 'No name available'}</span>
                     </div>
-                    
+
                     <div class="section">
-                        <h3>👤 Owner:</h3>
-                        {#if getMembersByRole(data?.members, 'owner').length > 0}
-                            {#await displayUserName(data?.members, 'owner')}
-                                <p>Loading owner...</p>
+                        <h3 style="display: inline; margin-right: 8px;">Collection Owner:</h3>
+                        <span>
+                            {#await getUserName(get(owner))}
+                                Loading owner...
                             {:then userName}
-                                <p>{userName}</p>
+                                {userName}
                             {:catch}
-                                <p class="no-data">Error loading owner data</p>
+                                <span class="no-data">Error loading owner data</span>
                             {/await}
-                        {:else}
-                            <p class="no-data">No Owner available</p>
-                        {/if}
+                        </span>
                     </div>
 
                     <div class="section">
-                        <h3>🤝 Collaborators:</h3>
+                        <h3>Collaborators:</h3>
                         {#if getMembersByRole(data?.members, 'collaborator').length > 0}
                             <ul>
                                 {#each getMembersByRole(data?.members, 'collaborator') as collaborator}
@@ -276,7 +251,7 @@
                     </div>
 
                     <div class="section">
-                        <h3>👀 Viewers:</h3>
+                        <h3>Viewers:</h3>
                         {#if getMembersByRole(data?.members, 'viewer').length > 0}
                             <ul>
                                 {#each getMembersByRole(data?.members, 'viewer') as viewer}
@@ -295,25 +270,24 @@
                     </div>
 
                     <div class="section">
-                        <h3>📍 Locations:</h3>
+                        <h3>Locations:</h3>
                         {#if data?.locations}
                             <ul>
                                 {#each Object.entries(data?.locations) as [key, location]}
-                                    <div id="location-box" class="flex items-center max-h-max space-x-4">
-                                        <li class="location-item h-max">
+                                    <div id="location-box" class="flex items-center space-x-4">
+                                        <li class="location-item">
                                             <strong>Name:</strong> {location?.name || 'No name'} <br/>
                                             <strong>Type:</strong> {location?.type || 'N/A'} <br/>
                                             <strong>Address:</strong> {location?.address || 'N/A'} <br/>
                                             <strong>Coordinates:</strong> {key} <br/>
                                             <strong>Added At:</strong> {location?.added_at || 'N/A'} 
                                         </li>
-                                        {#if owner !== "" && isUserOwner(owner)}
-                                            <button class="delete-btn h-1/4" onclick={() => deleteLocation(key)}>Delete</button>
+                                        {#if get(owner) && isUserOwner(get(owner))}
+                                            <button class="delete-btn" onclick={() => deleteLocation(key)}>Delete</button>
                                         {/if}
                                     </div>
                                 {/each}
                             </ul>
-                           
                         {:else}
                             <p class="no-data">No Locations available</p>
                         {/if}

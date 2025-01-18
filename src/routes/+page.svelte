@@ -14,7 +14,7 @@
     const itemsPerPage = 5;
     $: totalPages = Math.max(1, Math.ceil(collections.length / itemsPerPage));
     let error = '';
-
+    let collectionRoles = {}; // Will store the user roles for each collection
     
     async function fetchCollections() {
         try {
@@ -37,6 +37,7 @@
                     id: item.collection_id,
                     name: item.name
                 }));
+                await fetchRolesForCollections();
             } else {
                 error = 'Invalid data format from server.';
             }
@@ -44,6 +45,46 @@
             error = 'An error occurred while fetching collections.';
             console.error(err);
         }
+    }
+
+    async function fetchRolesForCollections() {
+        for (const collection of collections) {
+            await fetchCollectionData(collection.id); // Fetch data for each collection
+        }
+    }
+
+    // Fetch the collection data and determine the user's role
+    async function fetchCollectionData(collectionId) {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/collections/get_collection/${collectionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token')}`,
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                error = data.message || 'Failed to fetch collection details.';
+                return;
+            }
+
+            const data = await response.json();
+
+            // Assuming collectionData has a members field
+            const members = data.members || [];
+            const userId = sessionStorage.getItem('user_id'); // Assuming user_id is stored in sessionStorage
+            const role = getRoleByUserId(members, userId);
+            collectionRoles[collectionId] = role;
+
+        } catch (err) {
+            console.error('Error fetching collection data:', err);
+            error = 'An error occurred while fetching collection data.';
+        }
+    }
+
+    function getRoleByUserId(members, userId) {
+        const member = Object.entries(members || {}).find(([key, value]) => value.user_id === userId);
+        return member ? member[1].rights : null;
     }
 
     function nextPage() {
@@ -269,9 +310,15 @@
                 <div class="collection-item">
                     <span>{collection.name}</span>
                     <div class="collection-buttons">
-                        <button class="add-btn" on:click={() => addLocation(collection.id)}>➕</button>
-                        <button class="edit-btn" on:click={() => editCollection(collection.id, collection.name)}>Edit</button>
-                        <button class="delete-btn" on:click={() => deleteCollection(collection.id)}>Delete</button>
+                        {#if collectionRoles[collection.id] === 'collaborator' || collectionRoles[collection.id] === 'owner'}
+                            <button class="add-btn" on:click={() => addLocation(collection.id)}>➕</button>
+                        {/if}
+                        {#if collectionRoles[collection.id] === 'collaborator' || collectionRoles[collection.id] === 'owner'}
+                            <button class="edit-btn" on:click={() => editCollection(collection.id, collection.name)}>Edit</button>
+                        {/if}
+                        {#if collectionRoles[collection.id] === 'owner'}
+                            <button class="delete-btn" on:click={() => deleteCollection(collection.id)}>Delete</button>
+                        {/if}
                         <button class="see-btn" on:click={() => seeCollection(collection.id)}>View</button>
                     </div>
                 </div>
