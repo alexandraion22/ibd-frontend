@@ -6,10 +6,10 @@
 
     onMount(() => {
 
-      const dataArray = Object.entries(data).map(([user, collections]) => ({
-          user,
-          collections
-      }));
+    const dataArray = Object.entries(data)
+      .map(([user, collections]) => ({ user, collections }))
+      .sort((a, b) => b.collections - a.collections);
+      
           // set the dimensions and margins of the graph
       const margin = {top: 30, right: 30, bottom: 70, left: 60},
           width = 460 - margin.left - margin.right,
