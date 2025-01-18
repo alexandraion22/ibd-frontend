@@ -92,7 +92,7 @@
                 console.error('Failed to delete location:', data.message || 'Unknown error');
                 return;
             }
-            fetchCollectionData();
+            await fetchCollectionData();
         } catch (err) {
             console.error('Error while deleting location:', err);
         }
@@ -105,100 +105,134 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 20px;
+        padding: 40px;
         min-height: 100vh;
-        background: linear-gradient(to bottom, #ffffff, #f4f4f4);
+        background-color: #f4f7fc;
     }
 
     .card {
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        padding: 24px;
-        margin: 12px;
-        width: 90%;
+        background-color: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        padding: 32px;
+        margin: 16px;
+        width: 100%;
         max-width: 800px;
-        transition: box-shadow 0.3s ease-in-out;
+        text-align: left;
+        transition: transform 0.3s ease;
     }
 
     .card:hover {
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        transform: translateY(-6px);
     }
 
     .title {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #333333;
+        color: #333;
         text-align: center;
-        margin-bottom: 24px;
-        padding-bottom: 4px;
+        margin-bottom: 20px;
     }
 
     .section {
-        margin-top: 16px;
+        margin-bottom: 20px;
     }
 
-    .section h3 {
+    .section-title {
         font-size: 1.2rem;
         font-weight: bold;
-        color: #555555;
-        margin-bottom: 8px;
+        color: #555;
+        margin-bottom: 10px;
     }
 
-    .no-data {
-        color: #888888;
-        font-style: italic;
+    .section-content {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        background: #f9f9f9;
     }
 
     .error {
         color: #d9534f;
+        text-align: center;
         margin-top: 20px;
-        font-size: 1rem;
-        text-align: center;
     }
 
-    .location-item {
-        background: #f9f9f9;
+    .location-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+
+    .location-box {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border: 1px solid #ddd;
         border-radius: 8px;
-        margin: 8px 0;
         padding: 16px;
-        text-align: left;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        height: 100%;
+        min-height: 200px;
+        position: relative;
     }
 
-    .back-btn {
-        margin-top: 24px;
-        text-decoration: none;
-        background: #007bff;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: background 0.3s ease;
-        text-align: center;
+    .location-content {
+        flex-grow: 1;
+        margin-bottom: 40px;
     }
 
-    .back-btn:hover {
-        background: #0056b3;
+    .location-info {
+        margin-bottom: 8px;
     }
 
-    .loading {
-        font-size: 1.2rem;
-        color: #666666;
+    .location-actions {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
     }
 
     .delete-btn {
-        background-color: #dc3545;
+        background: #dc3545;
         color: white;
-        margin-left: 8px;
-        padding: 6px 12px;
+        padding: 8px 16px;
+        border: none;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 0.9rem;
+        transition: background-color 0.2s;
     }
 
     .delete-btn:hover {
-        background-color: #c82333;
+        background: #c82333;
+    }
+
+    .back-btn {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        color: #555;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: color 0.2s;
+    }
+
+    .back-btn:hover {
+        color: #333;
+    }
+
+    .member-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .member-item {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        background: #f9f9f9;
     }
 </style>
 
@@ -207,89 +241,110 @@
         <p class="error">{error}</p>
     {:else}
         {#await $collectionData}
-            <p class="loading">Loading collection details...</p>
+            <p>Loading collection details...</p>
         {:then data}
             {#if data}
                 <div class="card">
                     <h2 class="title">Collection Details</h2>
 
+                    <!-- Collection Name -->
                     <div class="section">
-                        <h3 style="display: inline; margin-right: 8px;">Collection Name:</h3>
-                        <span>{data?.name || 'No name available'}</span>
+                        <h3 class="section-title">Collection Name</h3>
+                        <div class="section-content">
+                            <p>{data?.name || 'No name available'}</p>
+                        </div>
                     </div>
 
+                    <!-- Collection Owner -->
                     <div class="section">
-                        <h3 style="display: inline; margin-right: 8px;">Collection Owner:</h3>
-                        <span>
+                        <h3 class="section-title">Collection Owner</h3>
+                        <div class="section-content">
                             {#await getUserName(get(owner))}
-                                Loading owner...
+                                <p>Loading owner...</p>
                             {:then userName}
-                                {userName}
+                                <p>{userName}</p>
                             {:catch}
-                                <span class="no-data">Error loading owner data</span>
+                                <p class="error">Error loading owner data.</p>
                             {/await}
-                        </span>
+                        </div>
                     </div>
 
+                    <!-- Collaborators -->
                     <div class="section">
-                        <h3>Collaborators:</h3>
+                        <h3 class="section-title">Collaborators</h3>
                         {#if getMembersByRole(data?.members, 'collaborator').length > 0}
-                            <ul>
+                            <div class="member-list">
                                 {#each getMembersByRole(data?.members, 'collaborator') as collaborator}
                                     {#await getUserName(collaborator)}
-                                        <li>Loading collaborator...</li>
+                                        <div class="member-item">Loading collaborator...</div>
                                     {:then collaboratorName}
-                                        <li>{collaboratorName}</li>
+                                        <div class="member-item">{collaboratorName}</div>
                                     {:catch}
-                                        <li class="no-data">Error loading collaborator data</li>
+                                        <div class="member-item error">Error loading collaborator data.</div>
                                     {/await}
                                 {/each}
-                            </ul>
+                            </div>
                         {:else}
-                            <p class="no-data">No Collaborators available</p>
+                            <p>No collaborators available.</p>
                         {/if}
                     </div>
 
+                    <!-- Viewers -->
                     <div class="section">
-                        <h3>Viewers:</h3>
+                        <h3 class="section-title">Viewers</h3>
                         {#if getMembersByRole(data?.members, 'viewer').length > 0}
-                            <ul>
+                            <div class="member-list">
                                 {#each getMembersByRole(data?.members, 'viewer') as viewer}
                                     {#await getUserName(viewer)}
-                                        <li>Loading viewer...</li>
+                                        <div class="member-item">Loading viewer...</div>
                                     {:then viewerName}
-                                        <li>{viewerName}</li>
+                                        <div class="member-item">{viewerName}</div>
                                     {:catch}
-                                        <li class="no-data">Error loading viewer data</li>
+                                        <div class="member-item error">Error loading viewer data.</div>
                                     {/await}
                                 {/each}
-                            </ul>
+                            </div>
                         {:else}
-                            <p class="no-data">No Viewers available</p>
+                            <p>No viewers available.</p>
                         {/if}
                     </div>
 
+                    <!-- Locations -->
                     <div class="section">
-                        <h3>Locations:</h3>
+                        <h3 class="section-title">Locations</h3>
                         {#if data?.locations}
-                            <ul>
+                            <div class="location-container">
                                 {#each Object.entries(data?.locations) as [key, location]}
-                                    <div id="location-box" class="flex items-center space-x-4">
-                                        <li class="location-item">
-                                            <strong>Name:</strong> {location?.name || 'No name'} <br/>
-                                            <strong>Type:</strong> {location?.type || 'N/A'} <br/>
-                                            <strong>Address:</strong> {location?.address || 'N/A'} <br/>
-                                            <strong>Coordinates:</strong> {key} <br/>
-                                            <strong>Added At:</strong> {location?.added_at || 'N/A'} 
-                                        </li>
+                                    <div class="location-box">
+                                        <div class="location-content">
+                                            <div class="location-info">
+                                                <strong>Name:</strong> {location?.name || 'No name'}
+                                            </div>
+                                            <div class="location-info">
+                                                <strong>Type:</strong> {location?.type || 'N/A'}
+                                            </div>
+                                            <div class="location-info">
+                                                <strong>Address:</strong> {location?.address || 'N/A'}
+                                            </div>
+                                            <div class="location-info">
+                                                <strong>Coordinates:</strong> {key}
+                                            </div>
+                                            <div class="location-info">
+                                                <strong>Added At:</strong> {location?.added_at || 'N/A'}
+                                            </div>
+                                        </div>
                                         {#if get(owner) && isUserOwner(get(owner))}
-                                            <button class="delete-btn" onclick={() => deleteLocation(key)}>Delete</button>
+                                            <div class="location-actions">
+                                                <button class="delete-btn" on:click={() => deleteLocation(key)}>
+                                                    Delete
+                                                </button>
+                                            </div>
                                         {/if}
                                     </div>
                                 {/each}
-                            </ul>
+                            </div>
                         {:else}
-                            <p class="no-data">No Locations available</p>
+                            <p>No locations available.</p>
                         {/if}
                     </div>
                 </div>

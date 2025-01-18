@@ -1,7 +1,6 @@
 <script>
     import { onMount } from 'svelte';
 
-
     let collectionName = '';
     let error = '';
     let successMessage = '';
@@ -9,8 +8,8 @@
     const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/collections/create_collection`;
 
     async function handleAddCollection() {
-        error = '';
-        successMessage = '';
+        error = '';  // Clear any previous error message
+        successMessage = '';  // Clear any previous success message
 
         if (!collectionName.trim()) {
             error = 'Collection name cannot be empty.';
@@ -35,9 +34,8 @@
             
             const data = await response.json();
             successMessage = `Collection "${collectionName}" created successfully!`;
-            collectionName = '';
-            selectedLocations = [];
-            map = null;
+            collectionName = '';  // Reset input field
+            // Reset other state if needed
         } catch (err) {
             error = 'An error occurred. Please try again later.';
             console.error(err);
@@ -71,7 +69,6 @@
 </div>
 
 <style>
-
     input {
         border: 1px solid #cbd5e0;
         padding: 0.5rem;
@@ -79,5 +76,3 @@
         width: 300px;
     }
 </style>
-
-

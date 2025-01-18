@@ -34,6 +34,7 @@
             sessionStorage.setItem('isAuthenticated', 'true');
             isAuthenticated.set(true);
             sessionStorage.setItem('username', userEmail);
+            console.log(token)
             window.location.href = "/";
         } catch (err) {
             error = 'Login failed. Please check your credentials or try again later.';
