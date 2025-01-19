@@ -73,9 +73,15 @@
             .map(member => member.user_id);
     }
 
+    function getRoleByUserId(members, userId) {
+        const member = Object.entries(members || {}).find(([key, value]) => value.user_id === userId);
+        return member ? member[1].rights : null;
+    }
+
     function isUserOwner(colOwner) {
         const id = sessionStorage.getItem('user_id');
-        return colOwner === id;
+        console.log(getRoleByUserId(collectionData.members, id))
+        return colOwner === id || getRoleByUserId(get(collectionData).members, id) === 'collaborator';
     }
 
     async function deleteLocation(coords) {
@@ -96,6 +102,15 @@
         } catch (err) {
             console.error('Error while deleting location:', err);
         }
+    }
+
+    function navigateToComments(coords, collectionId) {
+        const params = new URLSearchParams({
+            coords: coords,
+            collectionId: collectionId
+        });
+
+        window.location.href = `../../locations/comments?${params.toString()}`;
     }
 </script>
 
@@ -234,6 +249,21 @@
         margin-bottom: 10px;
         background: #f9f9f9;
     }
+
+    .view-comments-btn {
+        background: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 8px;
+        transition: background-color 0.2s;
+    }
+
+    .view-comments-btn:hover {
+        background: #0056b3;
+    }
 </style>
 
 <div class="container">
@@ -247,7 +277,6 @@
                 <div class="card">
                     <h2 class="title">Collection Details</h2>
 
-                    <!-- Collection Name -->
                     <div class="section">
                         <h3 class="section-title">Collection Name</h3>
                         <div class="section-content">
@@ -255,7 +284,6 @@
                         </div>
                     </div>
 
-                    <!-- Collection Owner -->
                     <div class="section">
                         <h3 class="section-title">Collection Owner</h3>
                         <div class="section-content">
@@ -269,7 +297,6 @@
                         </div>
                     </div>
 
-                    <!-- Collaborators -->
                     <div class="section">
                         <h3 class="section-title">Collaborators</h3>
                         {#if getMembersByRole(data?.members, 'collaborator').length > 0}
@@ -289,7 +316,6 @@
                         {/if}
                     </div>
 
-                    <!-- Viewers -->
                     <div class="section">
                         <h3 class="section-title">Viewers</h3>
                         {#if getMembersByRole(data?.members, 'viewer').length > 0}
@@ -309,7 +335,6 @@
                         {/if}
                     </div>
 
-                    <!-- Locations -->
                     <div class="section">
                         <h3 class="section-title">Locations</h3>
                         {#if data?.locations}
@@ -333,13 +358,16 @@
                                                 <strong>Added At:</strong> {location?.added_at || 'N/A'}
                                             </div>
                                         </div>
-                                        {#if get(owner) && isUserOwner(get(owner))}
-                                            <div class="location-actions">
+                                        <div class="location-actions">
+                                            {#if get(owner) && isUserOwner(get(owner))}
                                                 <button class="delete-btn" on:click={() => deleteLocation(key)}>
                                                     Delete
                                                 </button>
-                                            </div>
-                                        {/if}
+                                            {/if}
+                                            <button class="view-comments-btn" on:click={() => navigateToComments(key, collectionId)}>
+                                                Comments
+                                            </button>
+                                        </div>
                                     </div>
                                 {/each}
                             </div>

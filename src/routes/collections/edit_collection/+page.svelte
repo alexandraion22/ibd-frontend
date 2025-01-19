@@ -7,7 +7,7 @@
     let error = '';
     let success = '';
     let updatedName = '';
-    let availableUsers = writable([]); // available users for collaborator and viewer selection
+    let availableUsers = writable([]);
     let selectedCollaborator = '';
     let selectedViewer = '';
     let currentOperation = 'general';
@@ -333,7 +333,7 @@
     }
 
     .user-email {
-        flex-grow: 1; /* Ensures the email takes available space */
+        flex-grow: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -371,7 +371,6 @@
             <div class="card">
                 <h2 class="title">Edit Collection</h2>
 
-                <!-- Update Collection Name Section -->
                 <div class="section">
                     <h3>Update Collection Name</h3>
                     {#if data?.name}
@@ -394,7 +393,6 @@
                     {/if}
                 </div>
 
-                <!-- Add Collaborator Section -->
                 <div class="section">
                     <h3>Add New Collaborator</h3>
                     <div class="input-container">
@@ -432,7 +430,6 @@
                     {/if}
                 </div>
 
-                <!-- Add Viewer Section -->
                 <div class="section">
                     <h3>Add New Viewer</h3>
                     <div class="input-container">
