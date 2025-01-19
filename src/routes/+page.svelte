@@ -1,7 +1,7 @@
 <script>
     import { isAuthenticated } from '../stores/auth';
     import { onMount } from 'svelte';
-    import logo from '$lib/assets/city-spotter-bg.png';
+    import logo from '$lib/assets/logo.png';
 
 
     let authenticated = false;
@@ -288,7 +288,7 @@
     <div class="container">
 
         <div class="header">
-            <img alt="city-spotter-logo" src={logo} class="logo">
+            <img alt="logo" src={logo} class="logo">
         </div>
 
         <div class="content">
